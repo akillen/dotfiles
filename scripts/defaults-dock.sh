@@ -62,6 +62,7 @@ remove_default_dock_items() {
 		"App Store"
 		"iPhone Mirroring"
 		"System Settings"
+		"Terminal"
 	)
 
 	# Common default Dock folders/stacks.
@@ -82,6 +83,30 @@ remove_default_dock_items() {
 	fi
 }
 
+add_dock_items() {
+	if ! command -v dockutil >/dev/null 2>&1; then
+		echo "dockutil not found; skipping dock item additions."
+		return 0
+	fi
+
+	local iterm_path="/Applications/iTerm.app"
+	if [ ! -d "$iterm_path" ]; then
+		echo "iTerm.app not found at $iterm_path; skipping."
+		return 0
+	fi
+
+	if dockutil --list 2>/dev/null | grep -q "iTerm"; then
+		echo "iTerm already in Dock; skipping."
+	else
+		echo "Adding iTerm to Dock..."
+		if [ "$DRY_RUN" -eq 1 ]; then
+			echo "DRY RUN: dockutil --add $iterm_path --no-restart"
+		else
+			dockutil --add "$iterm_path" --no-restart >/dev/null 2>&1 || true
+		fi
+	fi
+}
+
 echo "Applying Dock defaults..."
 
 # Move the dock to the right side of the screen
@@ -95,6 +120,9 @@ run defaults write com.apple.dock autohide -bool true
 
 # Remove the default macOS app set from Dock.
 remove_default_dock_items
+
+# Add pinned apps.
+add_dock_items
 
 # Keyboard-first optional mode: show only currently running apps
 if [ "$RUNNING_ONLY" -eq 1 ]; then
