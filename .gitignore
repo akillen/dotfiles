@@ -1,0 +1,9 @@
+# Local setup configuration (machine/user specific)
+setup.conf
+setup.local.conf
+*.local.conf
+
+# Optional local env files
+.env
+.env.*
+!.env.example
