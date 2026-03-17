@@ -313,8 +313,25 @@ ensure_development_dir() {
   fi
 }
 
+request_sudo_upfront() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY RUN: sudo -v (credential prefetch)"
+    return 0
+  fi
+
+  echo "Some steps require administrator privileges. Please enter your password once now."
+  sudo -v
+
+  # Keep the sudo credential alive for the duration of setup.
+  ( while true; do sudo -n true; sleep 55; done ) &
+  SUDO_KEEPALIVE_PID=$!
+  # Ensure the keepalive is killed when setup exits (success or failure).
+  trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true' EXIT
+}
+
 echo "Starting Mac setup..."
 
+request_sudo_upfront
 ensure_xcode_clt
 install_rosetta_if_needed
 install_homebrew_if_missing
@@ -382,11 +399,17 @@ else
   fi
 fi
 
-echo "-> Applying macOS defaults (Finder & Dock)"
+echo "-> Applying macOS defaults (Finder, Dock & Sound)"
 if [ "$NO_RESTART" -eq 1 ]; then
   run_module_script "$SCRIPT_DIR/scripts/defaults-finder.sh" --no-restart
 else
   run_module_script "$SCRIPT_DIR/scripts/defaults-finder.sh"
+fi
+
+if [ "$NO_RESTART" -eq 1 ]; then
+  run_module_script "$SCRIPT_DIR/scripts/defaults-sounds.sh" --no-restart
+else
+  run_module_script "$SCRIPT_DIR/scripts/defaults-sounds.sh"
 fi
 
 if [ "$NO_RESTART" -eq 1 ] && [ "$DOCK_RUNNING_ONLY" -eq 1 ]; then
