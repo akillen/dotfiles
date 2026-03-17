@@ -1,6 +1,7 @@
-# -- Taps (Third-party repositories) --
+# NOTE: As of Homebrew changes, some taps (homebrew/bundle, homebrew/cask-fonts)
+# are deprecated. Keep this Brewfile minimal and prefer core formulas/casks.
 
-# -- CLI Tools (The 'brew' command) --
+# -- CLI Tools (brew formulas) --
 brew "git"
 brew "gemini-cli"
 brew "node"
@@ -9,20 +10,21 @@ brew "zsh-autosuggestions"
 brew "tree"
 brew "jq" # Great for processing JSON
 brew "xcodes"
+brew "duti" # set default handlers (e.g., default browser)
+brew "mas" # Mac App Store CLI (use `mas install <id>` for store apps)
 
-# -- GUI Apps (The 'cask' command) --
+# -- GUI Apps (casks)
 cask "visual-studio-code"
 cask "iterm2"
 cask "slack"
 cask "docker"
 cask "firefox"
-cask "visual-studio-code"
 cask "bitwarden"
+cask "rectangle" # Window management
 
-# Optional: Install the Bitwarden CLI tool as well
-# brew "bitwarden-cli"
-cask "rectangle" # Window management - a must-have!
+# -- Fonts (via homebrew/cask-fonts)
 cask "font-fira-code" # Nice dev font
 
-# -- Mac App Store Apps (Requires 'mas' CLI) --
-brew "mas"
+# Notes:
+# - Group entries by type (taps / brew / cask / mas) so `brew bundle` stays readable.
+# - Remove duplicates and comment optional items. Add mas-managed app IDs separately.

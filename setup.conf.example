@@ -1,0 +1,13 @@
+# Copy this file to setup.conf and customize your values.
+# setup.sh automatically loads ./setup.conf by default.
+
+# Identity used by scripts/setup-git.sh and scripts/setup-ssh.sh
+GIT_NAME="Your Name"
+GIT_EMAIL="you@example.com"
+
+# Behavior flags (0 or 1)
+ASSUME_YES=0
+NO_SOURCE=0
+NO_RESTART=0
+SKIP_XCODE=0
+SKIP_SIMULATOR=0

@@ -6,12 +6,20 @@
 **Files Of Interest**
 - **Brewfile**: [Brewfile](Brewfile) — Homebrew Bundle list of packages and casks.
 - **Bootstrap Script**: [setup.sh](setup.sh) — Orchestrator to run `brew bundle`, symlink dotfiles, and apply macOS defaults.
+- **Setup Config**: [setup.conf](setup.conf) — Default identity and behavior flags consumed by `setup.sh`.
+- **Xcode Module**: [scripts/setup-xcode.sh](scripts/setup-xcode.sh) — Handles Xcode install/first-launch/license/simulator steps with a spinner for long-running operations.
 
 **Overview**
 - Automate install of CLI and GUI apps via Homebrew and `brew bundle`.
 - Centralize configuration as a `~/dotfiles` repository and deploy via symlinks.
 - Script macOS system preferences using the `defaults` command.
 - Make the whole flow idempotent, transparent, and minimally interactive.
+
+**Current Status (Implemented)**
+- `setup.sh` is modular and parameterized (`--name`, `--email`, `--dry-run`, `--yes`, `--no-source`, `--no-restart`, `--skip-xcode`, `--skip-simulator`).
+- Dotfile symlinking is delegated to `scripts/symlink-dotfiles.sh` with timestamped backups.
+- Finder and Dock defaults are delegated to `scripts/defaults-finder.sh` and `scripts/defaults-dock.sh`.
+- Xcode/iOS runtime setup is delegated to `scripts/setup-xcode.sh` with spinner-based waits for long-running downloads.
 
 **Architecture**
 - **Core Engine**: Homebrew
@@ -25,7 +33,8 @@
   - Each script should be safe to re-run and should document the user-visible effect.
 - **Orchestrator (`setup.sh`)**
   - Steps: check prerequisites, install Homebrew if missing, run `brew bundle`, run symlink script, run `defaults` scripts, cleanup.
-  - Ensure the orchestrator supports `--no-restart`, `--dry-run`, and `--yes` flags.
+  - Ensure the orchestrator supports `--config`, `--no-restart`, `--dry-run`, and `--yes` flags.
+  - CLI flags override values loaded from `setup.conf`.
 
 **Design Decisions & Rationale**
 - **Use Homebrew + Brewfile**: single source of truth for packages and GUI apps; widely adopted and scriptable.
@@ -40,6 +49,8 @@
 ```bash
 git clone <your-repo> ~/dotfiles
 cd ~/dotfiles
+# optional first-time template copy
+# cp setup.conf.example setup.conf
 ./setup.sh --dry-run
 # review, then
 ./setup.sh
@@ -50,6 +61,30 @@ cd ~/dotfiles
 - CLI tools: `brew "git"`, `brew "node"`
 - Casks (GUI apps): `cask "visual-studio-code"`, `cask "slack"`
 - Mac App Store apps: use `mas` where applicable, documented separately.
+
+**Review: Brewfile & setup.sh**
+- **Brewfile findings**: The repo has a `Brewfile` with useful entries, but there are a few issues to address:
+  - `visual-studio-code` is listed twice; remove duplicates.
+  - Fonts and some casks require taps (e.g., `homebrew/cask-fonts` for `font-fira-code`). Add explicit `tap` lines for required taps.
+  - Consider grouping entries (taps / brew / cask / mas) and adding comments for optional items.
+
+- **setup.sh findings**: The current `setup.sh` implements many orchestrator steps (Homebrew install, `brew bundle`, macOS `defaults`, SSH key creation, Git config, symlinking, and Xcode automation). Recommended fixes:
+  - Ensure `brew` is available in PATH for both Intel and Apple Silicon (use `eval "$(brew shellenv)"` in a robust way).
+  - The spinner implementation has quoting issues and may break the script; replace with a well-tested spinner or remove for reliability.
+  - Backgrounding `xcodes install` and then checking `$?` will capture the spinner's exit status, not Xcode's. Use a `pid=$!; spinner $pid; wait $pid; rc=$?` pattern and check `$rc`.
+  - Before symlinking dotfiles, back up existing files to `dotfiles_backup/<timestamp>` instead of force-overwriting with `ln -sf`.
+  - `source ~/.zshrc` is executed immediately after linking; consider deferring until later or documenting the change, and support a `--no-source` or `--dry-run` flag.
+  - Hard-coded Git name/email should be parameterized or prompted for via flags to avoid committing personal values into the script.
+  - Several `defaults` keys (and domains) should be documented and grouped into per-area scripts (e.g., `scripts/defaults-finder.sh`, `scripts/defaults-dock.sh`) for easier review and re-run safety.
+
+**Actions taken / next-code changes suggested**
+- Remove duplicate casks and add required taps to `Brewfile`.
+- Add a `scripts/symlink-dotfiles.sh` that performs timestamped backups and idempotent symlinks.
+- Replace or fix the spinner and improve process wait/exit checks around `xcodes` and `xcodebuild` steps.
+- Parameterize `git` configuration and add CLI flags to `setup.sh`: `--dry-run`, `--yes`, `--no-restart`, `--no-source`.
+
+- **Default browser**: `setup.sh` now installs `duti` (via the `Brewfile`) and, if `Firefox` is present, uses `duti` to make `Firefox` the default handler for `http`, `https`, and common HTML types. This is done after `brew bundle` completes so the app and `duti` are both installed.
+
 
 **TODOs (short-term)**
 - **Doc**: Finalize this `SETUP.md` and link examples. (done)
