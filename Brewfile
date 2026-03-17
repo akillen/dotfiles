@@ -1,6 +1,9 @@
 # NOTE: As of Homebrew changes, some taps (homebrew/bundle, homebrew/cask-fonts)
 # are deprecated. Keep this Brewfile minimal and prefer core formulas/casks.
 
+# -- Taps --
+tap "wix/brew"
+
 # -- CLI Tools (brew formulas) --
 brew "git"
 brew "gemini-cli"
@@ -9,7 +12,11 @@ brew "python"
 brew "zsh-autosuggestions"
 brew "tree"
 brew "jq" # Great for processing JSON
+brew "dialog" # Script dialogs/utilities
+brew "watchman" # React Native file watching
 brew "xcodes"
+brew "cocoapods" # iOS dependency manager
+brew "wix/brew/applesimutils" # iOS simulator management (Detox)
 brew "duti" # set default handlers (e.g., default browser)
 brew "dockutil" # explicit Dock item add/remove by app name
 brew "mas" # Mac App Store CLI (use `mas install <id>` for store apps)

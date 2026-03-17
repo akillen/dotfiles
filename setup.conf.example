@@ -18,6 +18,7 @@ SKIP_BROWSER_DEFAULT=0
 # Node.js setup preferences (nvm)
 NODE_VERSION="node"
 NPM_VERSION="latest"
+NPM_GLOBAL_PACKAGES="expo eas-cli detox-cli"
 
 # Browser default-handler retry tuning (used when duti hits lock error -54)
 BROWSER_RETRY_ATTEMPTS=4

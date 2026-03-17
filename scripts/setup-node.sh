@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage: setup-node.sh [--dry-run] [--yes] [--node-version node] [--npm-version latest]
+# Usage: setup-node.sh [--dry-run] [--yes] [--node-version node] [--npm-version latest] [--global-packages "expo eas-cli detox-cli"]
 
 DRY_RUN=0
 ASSUME_YES=0
 NODE_VERSION="node"
 NPM_VERSION="latest"
+GLOBAL_PACKAGES="expo eas-cli detox-cli"
 
 while [[ ${1-} != "" ]]; do
   case "$1" in
@@ -19,6 +20,10 @@ while [[ ${1-} != "" ]]; do
     --npm-version)
       shift
       NPM_VERSION="${1-}"
+      ;;
+    --global-packages)
+      shift
+      GLOBAL_PACKAGES="${1-}"
       ;;
     -h|--help)
       sed -n '1,220p' "$0"
@@ -51,6 +56,9 @@ if [ "$DRY_RUN" -eq 1 ]; then
   echo "DRY RUN: nvm alias default '$NODE_VERSION'"
   echo "DRY RUN: nvm use default"
   echo "DRY RUN: npm install -g 'npm@$NPM_VERSION'"
+  if [ -n "$GLOBAL_PACKAGES" ]; then
+    echo "DRY RUN: npm install -g $GLOBAL_PACKAGES"
+  fi
   return 0 2>/dev/null || exit 0
 fi
 
@@ -75,6 +83,12 @@ nvm use default >/dev/null
 
 if command -v npm >/dev/null 2>&1; then
   npm install -g "npm@$NPM_VERSION"
+
+  if [ -n "$GLOBAL_PACKAGES" ]; then
+    # Space-delimited package list from config/CLI.
+    read -r -a pkgs <<< "$GLOBAL_PACKAGES"
+    npm install -g "${pkgs[@]}"
+  fi
 else
   echo "npm was not found after nvm setup."
   exit 1

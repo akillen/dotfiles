@@ -18,6 +18,7 @@ SKIP_NODE_SETUP=0
 DOCK_RUNNING_ONLY=0
 NODE_VERSION="node"
 NPM_VERSION="latest"
+NPM_GLOBAL_PACKAGES="expo eas-cli detox-cli"
 BROWSER_RETRY_ATTEMPTS=4
 BROWSER_RETRY_DELAY_SECONDS=1
 DEVELOPMENT_DIR="$HOME/development"
@@ -130,6 +131,23 @@ install_homebrew_if_missing() {
   fi
 
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+}
+
+ensure_xcode_clt() {
+  if xcode-select -p >/dev/null 2>&1; then
+    echo "Xcode Command Line Tools already installed."
+    return 0
+  fi
+
+  echo "Xcode Command Line Tools are required for iOS/native tooling."
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY RUN: xcode-select --install"
+    return 0
+  fi
+
+  xcode-select --install >/dev/null 2>&1 || true
+  echo "Started Command Line Tools installer. Complete it, then rerun ./setup.sh."
+  exit 1
 }
 
 load_brew_env() {
@@ -277,6 +295,7 @@ ensure_development_dir() {
 
 echo "Starting Mac setup..."
 
+ensure_xcode_clt
 install_homebrew_if_missing
 load_brew_env
 
@@ -285,6 +304,13 @@ if [ "$DRY_RUN" -eq 1 ]; then
   echo "DRY RUN: brew update"
 else
   brew update || true
+fi
+
+echo "Ensuring required taps..."
+if [ "$DRY_RUN" -eq 1 ]; then
+  echo "DRY RUN: brew tap wix/brew"
+else
+  brew tap wix/brew >/dev/null 2>&1 || brew tap wix/brew
 fi
 
 echo "Installing apps from Brewfile (from $SCRIPT_DIR)..."
@@ -307,7 +333,7 @@ echo "-> Setting up Node.js (nvm + npm + npx)"
 if [ "$SKIP_NODE_SETUP" -eq 1 ]; then
   echo "Skipping Node setup (--skip-node)."
 else
-  run_module_script "$SCRIPT_DIR/scripts/setup-node.sh" --node-version "$NODE_VERSION" --npm-version "$NPM_VERSION"
+  run_module_script "$SCRIPT_DIR/scripts/setup-node.sh" --node-version "$NODE_VERSION" --npm-version "$NPM_VERSION" --global-packages "$NPM_GLOBAL_PACKAGES"
 fi
 
 echo "-> Configuring Git"
