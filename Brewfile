@@ -11,6 +11,7 @@ brew "tree"
 brew "jq" # Great for processing JSON
 brew "xcodes"
 brew "duti" # set default handlers (e.g., default browser)
+brew "dockutil" # explicit Dock item add/remove by app name
 brew "mas" # Mac App Store CLI (use `mas install <id>` for store apps)
 
 # -- GUI Apps (casks)

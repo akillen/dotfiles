@@ -15,6 +15,7 @@ SKIP_XCODE=0
 SKIP_SIMULATOR=0
 SKIP_BROWSER_DEFAULT=0
 SKIP_NODE_SETUP=0
+DOCK_RUNNING_ONLY=0
 NODE_VERSION="node"
 NPM_VERSION="latest"
 BROWSER_RETRY_ATTEMPTS=4
@@ -32,6 +33,7 @@ Options:
   --email       Git user.email and used for SSH key generation
   --no-source   Do not source the new shell config at the end
   --no-restart  Do not restart Finder/Dock after defaults changes
+  --dock-running-only  Dock shows only currently running apps (hides pinned apps)
   --skip-node   Skip Node.js/nvm setup
   --skip-xcode  Skip Xcode toolchain setup steps
   --skip-simulator  Skip iOS simulator runtime download
@@ -97,6 +99,7 @@ for ((i=0; i<${#ARGS[@]}; i++)); do
       ;;
     --no-source) NO_SOURCE=1 ;;
     --no-restart) NO_RESTART=1 ;;
+    --dock-running-only) DOCK_RUNNING_ONLY=1 ;;
     --skip-node) SKIP_NODE_SETUP=1 ;;
     --skip-xcode) SKIP_XCODE=1 ;;
     --skip-simulator) SKIP_SIMULATOR=1 ;;
@@ -318,9 +321,17 @@ fi
 echo "-> Applying macOS defaults (Finder & Dock)"
 if [ "$NO_RESTART" -eq 1 ]; then
   run_module_script "$SCRIPT_DIR/scripts/defaults-finder.sh" --no-restart
-  run_module_script "$SCRIPT_DIR/scripts/defaults-dock.sh" --no-restart
 else
   run_module_script "$SCRIPT_DIR/scripts/defaults-finder.sh"
+fi
+
+if [ "$NO_RESTART" -eq 1 ] && [ "$DOCK_RUNNING_ONLY" -eq 1 ]; then
+  run_module_script "$SCRIPT_DIR/scripts/defaults-dock.sh" --no-restart --running-only
+elif [ "$NO_RESTART" -eq 1 ]; then
+  run_module_script "$SCRIPT_DIR/scripts/defaults-dock.sh" --no-restart
+elif [ "$DOCK_RUNNING_ONLY" -eq 1 ]; then
+  run_module_script "$SCRIPT_DIR/scripts/defaults-dock.sh" --running-only
+else
   run_module_script "$SCRIPT_DIR/scripts/defaults-dock.sh"
 fi
 
