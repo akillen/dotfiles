@@ -20,6 +20,7 @@ NODE_VERSION="node"
 NPM_VERSION="latest"
 BROWSER_RETRY_ATTEMPTS=4
 BROWSER_RETRY_DELAY_SECONDS=1
+DEVELOPMENT_DIR="$HOME/development"
 
 usage() {
   cat <<USAGE
@@ -260,6 +261,20 @@ run_module_script() {
   fi
 }
 
+ensure_development_dir() {
+  if [ -d "$DEVELOPMENT_DIR" ]; then
+    echo "Development directory exists at $DEVELOPMENT_DIR"
+    return 0
+  fi
+
+  echo "Creating development directory at $DEVELOPMENT_DIR"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY RUN: mkdir -p $DEVELOPMENT_DIR"
+  else
+    mkdir -p "$DEVELOPMENT_DIR"
+  fi
+}
+
 echo "Starting Mac setup..."
 
 install_homebrew_if_missing
@@ -280,6 +295,8 @@ else
 fi
 
 configure_firefox_default
+
+ensure_development_dir
 
 echo "Running modular setup scripts..."
 
