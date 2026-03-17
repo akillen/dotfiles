@@ -42,4 +42,14 @@ run git config --global user.email "$EMAIL"
 run git config --global init.defaultBranch main
 run git config --global core.editor "code --wait"
 
+echo "Configuring git aliases..."
+run git config --global alias.co checkout
+run git config --global alias.pom "'pull origin main'"
+run git config --global alias.st status
+run git config --global alias.br branch
+run git config --global alias.lg "'log --oneline --graph --decorate --all'"
+run git config --global alias.unstage "'reset HEAD --'"
+run git config --global alias.undo "'reset --soft HEAD~1'"
+run git config --global alias.aliases "'config --get-regexp alias'"
+
 echo "Git configured."
