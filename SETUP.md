@@ -8,6 +8,7 @@
 - **Bootstrap Script**: [setup.sh](setup.sh) — Orchestrator to run `brew bundle`, symlink dotfiles, and apply macOS defaults.
 - **Setup Config**: [setup.conf](setup.conf) — Default identity and behavior flags consumed by `setup.sh`.
 - **Xcode Module**: [scripts/setup-xcode.sh](scripts/setup-xcode.sh) — Handles Xcode install/first-launch/license/simulator steps with a spinner for long-running operations.
+- **Node Module**: [scripts/setup-node.sh](scripts/setup-node.sh) — Installs and configures Node via `nvm`, upgrades `npm`, and verifies `npx`.
 
 **Overview**
 - Automate install of CLI and GUI apps via Homebrew and `brew bundle`.
@@ -20,6 +21,7 @@
 - Dotfile symlinking is delegated to `scripts/symlink-dotfiles.sh` with timestamped backups.
 - Finder and Dock defaults are delegated to `scripts/defaults-finder.sh` and `scripts/defaults-dock.sh`.
 - Xcode/iOS runtime setup is delegated to `scripts/setup-xcode.sh` with spinner-based waits for long-running downloads.
+- Node.js setup is delegated to `scripts/setup-node.sh` (`nvm`, latest `npm`, and `npx` availability check).
 
 **Architecture**
 - **Core Engine**: Homebrew

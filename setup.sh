@@ -13,6 +13,12 @@ NO_SOURCE=0
 NO_RESTART=0
 SKIP_XCODE=0
 SKIP_SIMULATOR=0
+SKIP_BROWSER_DEFAULT=0
+SKIP_NODE_SETUP=0
+NODE_VERSION="node"
+NPM_VERSION="latest"
+BROWSER_RETRY_ATTEMPTS=4
+BROWSER_RETRY_DELAY_SECONDS=1
 
 usage() {
   cat <<USAGE
@@ -26,8 +32,10 @@ Options:
   --email       Git user.email and used for SSH key generation
   --no-source   Do not source the new shell config at the end
   --no-restart  Do not restart Finder/Dock after defaults changes
+  --skip-node   Skip Node.js/nvm setup
   --skip-xcode  Skip Xcode toolchain setup steps
   --skip-simulator  Skip iOS simulator runtime download
+  --skip-browser-default  Skip Firefox default-browser configuration
 USAGE
 }
 
@@ -89,8 +97,10 @@ for ((i=0; i<${#ARGS[@]}; i++)); do
       ;;
     --no-source) NO_SOURCE=1 ;;
     --no-restart) NO_RESTART=1 ;;
+    --skip-node) SKIP_NODE_SETUP=1 ;;
     --skip-xcode) SKIP_XCODE=1 ;;
     --skip-simulator) SKIP_SIMULATOR=1 ;;
+    --skip-browser-default) SKIP_BROWSER_DEFAULT=1 ;;
     -h|--help)
       usage
       exit 0
@@ -126,21 +136,56 @@ load_brew_env() {
   fi
 }
 
+current_handler_bundle_for_scheme() {
+  local scheme="$1"
+  local out
+  out="$(duti -x "$scheme" 2>/dev/null || true)"
+  printf '%s\n' "$out" | awk 'NR==3 {print $1}'
+}
+
+is_firefox_default_for_web() {
+  local ff_bundle="org.mozilla.firefox"
+  local http_bundle
+  local https_bundle
+
+  http_bundle="$(current_handler_bundle_for_scheme http)"
+  https_bundle="$(current_handler_bundle_for_scheme https)"
+
+  [ "$http_bundle" = "$ff_bundle" ] && [ "$https_bundle" = "$ff_bundle" ]
+}
+
 set_handler_with_retry() {
   local bundle_id="$1"
   local target="$2"
-  local attempts="${3:-15}"
-  local sleep_seconds="${4:-2}"
+  local attempts="${3:-$BROWSER_RETRY_ATTEMPTS}"
+  local sleep_seconds="${4:-$BROWSER_RETRY_DELAY_SECONDS}"
   local attempt
+  local output
+  local current
 
   for ((attempt=1; attempt<=attempts; attempt++)); do
-    if duti -s "$bundle_id" "$target" >/dev/null 2>&1; then
+    if output="$(duti -s "$bundle_id" "$target" 2>&1)"; then
       echo "Set handler: $target -> $bundle_id"
       return 0
     fi
 
-    if [ "$attempt" -eq 1 ]; then
-      echo "Waiting for macOS default-browser confirmation to finish..."
+    # Sometimes LaunchServices updates even when duti returns an error.
+    current="$(current_handler_bundle_for_scheme "$target")"
+    if [ "$current" = "$bundle_id" ]; then
+      echo "Set handler: $target -> $bundle_id (verified)"
+      return 0
+    fi
+
+    if [[ "$output" == *"error -54"* ]]; then
+      if [ "$attempt" -lt "$attempts" ]; then
+        echo "Browser-preference lock (error -54). Retrying $target ($attempt/$attempts)..."
+      else
+        echo "Browser-preference lock still active for $target; continuing without blocking setup."
+      fi
+    elif [ "$attempt" -eq "$attempts" ]; then
+      echo "Last duti error for $target: $output"
+    else
+      echo "Retrying handler update for $target ($attempt/$attempts)..."
     fi
 
     if [ "$attempt" -lt "$attempts" ]; then
@@ -153,6 +198,11 @@ set_handler_with_retry() {
 }
 
 configure_firefox_default() {
+  if [ "$SKIP_BROWSER_DEFAULT" -eq 1 ]; then
+    echo "Skipping Firefox default-browser configuration (--skip-browser-default)."
+    return 0
+  fi
+
   if ! command -v duti >/dev/null 2>&1; then
     echo "duti not available; skipping default browser configuration."
     return 0
@@ -163,25 +213,23 @@ configure_firefox_default() {
     return 0
   fi
 
-  echo "Registering Firefox with LaunchServices..."
-  if [ "$DRY_RUN" -eq 1 ]; then
-    echo "DRY RUN: open -a Firefox"
-    echo "DRY RUN: duti -s org.mozilla.firefox http"
-    echo "DRY RUN: duti -s org.mozilla.firefox https"
-    echo "DRY RUN: duti -s org.mozilla.firefox public.html"
-    echo "DRY RUN: duti -s org.mozilla.firefox .html"
+  if is_firefox_default_for_web; then
+    echo "Firefox is already default for http/https; skipping browser update."
     return 0
   fi
 
-  # This can trigger the Firefox default-browser prompt.
-  open -a "Firefox" >/dev/null 2>&1 || true
-  echo "If prompted, choose Firefox as default. Waiting up to ~30 seconds for selection..."
+  echo "Configuring Firefox as default for web links..."
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY RUN: duti -s org.mozilla.firefox http"
+    echo "DRY RUN: duti -s org.mozilla.firefox https"
+    return 0
+  fi
 
   local ff_bundle="org.mozilla.firefox"
   local failures=0
 
-  for target in http https public.html .html; do
-    if ! set_handler_with_retry "$ff_bundle" "$target" 15 2; then
+  for target in http https; do
+    if ! set_handler_with_retry "$ff_bundle" "$target"; then
       failures=$((failures + 1))
     fi
   done
@@ -191,6 +239,21 @@ configure_firefox_default() {
   else
     echo "Warning: Firefox default configuration was partially applied."
     echo "You can retry later with: duti -s org.mozilla.firefox http && duti -s org.mozilla.firefox https"
+  fi
+}
+
+run_module_script() {
+  local script_path="$1"
+  shift
+
+  if [ "$DRY_RUN" -eq 1 ] && [ "$ASSUME_YES" -eq 1 ]; then
+    "$script_path" --dry-run --yes "$@"
+  elif [ "$DRY_RUN" -eq 1 ]; then
+    "$script_path" --dry-run "$@"
+  elif [ "$ASSUME_YES" -eq 1 ]; then
+    "$script_path" --yes "$@"
+  else
+    "$script_path" "$@"
   fi
 }
 
@@ -216,23 +279,27 @@ fi
 configure_firefox_default
 
 echo "Running modular setup scripts..."
-common_flags=()
-if [ "$DRY_RUN" -eq 1 ]; then common_flags+=(--dry-run); fi
-if [ "$ASSUME_YES" -eq 1 ]; then common_flags+=(--yes); fi
 
 echo "-> Symlinking dotfiles"
-"$SCRIPT_DIR/scripts/symlink-dotfiles.sh" "${common_flags[@]}"
+run_module_script "$SCRIPT_DIR/scripts/symlink-dotfiles.sh"
+
+echo "-> Setting up Node.js (nvm + npm + npx)"
+if [ "$SKIP_NODE_SETUP" -eq 1 ]; then
+  echo "Skipping Node setup (--skip-node)."
+else
+  run_module_script "$SCRIPT_DIR/scripts/setup-node.sh" --node-version "$NODE_VERSION" --npm-version "$NPM_VERSION"
+fi
 
 echo "-> Configuring Git"
 if [ -n "$GIT_NAME" ] && [ -n "$GIT_EMAIL" ]; then
-  "$SCRIPT_DIR/scripts/setup-git.sh" "${common_flags[@]}" --name "$GIT_NAME" --email "$GIT_EMAIL"
+  run_module_script "$SCRIPT_DIR/scripts/setup-git.sh" --name "$GIT_NAME" --email "$GIT_EMAIL"
 else
   echo "Git name/email not provided; skipping git identity setup."
 fi
 
 echo "-> Setting up SSH keys"
 if [ -n "$GIT_EMAIL" ]; then
-  "$SCRIPT_DIR/scripts/setup-ssh.sh" "${common_flags[@]}" --email "$GIT_EMAIL"
+  run_module_script "$SCRIPT_DIR/scripts/setup-ssh.sh" --email "$GIT_EMAIL"
 else
   echo "Email not provided; skipping SSH key generation."
 fi
@@ -241,25 +308,35 @@ echo "-> Setting up Xcode toolchain"
 if [ "$SKIP_XCODE" -eq 1 ]; then
   echo "Skipping Xcode setup (--skip-xcode)."
 else
-  xcode_flags=("${common_flags[@]}")
-  if [ "$SKIP_SIMULATOR" -eq 1 ]; then xcode_flags+=(--skip-simulator); fi
-  "$SCRIPT_DIR/scripts/setup-xcode.sh" "${xcode_flags[@]}"
+  if [ "$SKIP_SIMULATOR" -eq 1 ]; then
+    run_module_script "$SCRIPT_DIR/scripts/setup-xcode.sh" --skip-simulator
+  else
+    run_module_script "$SCRIPT_DIR/scripts/setup-xcode.sh"
+  fi
 fi
 
 echo "-> Applying macOS defaults (Finder & Dock)"
-defaults_flags=("${common_flags[@]}")
-if [ "$NO_RESTART" -eq 1 ]; then defaults_flags+=(--no-restart); fi
-"$SCRIPT_DIR/scripts/defaults-finder.sh" "${defaults_flags[@]}"
-"$SCRIPT_DIR/scripts/defaults-dock.sh" "${defaults_flags[@]}"
+if [ "$NO_RESTART" -eq 1 ]; then
+  run_module_script "$SCRIPT_DIR/scripts/defaults-finder.sh" --no-restart
+  run_module_script "$SCRIPT_DIR/scripts/defaults-dock.sh" --no-restart
+else
+  run_module_script "$SCRIPT_DIR/scripts/defaults-finder.sh"
+  run_module_script "$SCRIPT_DIR/scripts/defaults-dock.sh"
+fi
 
 if [ "$NO_SOURCE" -eq 0 ]; then
   if [ -f "$HOME/.zshrc" ]; then
     if [ "$DRY_RUN" -eq 1 ]; then
       echo "DRY RUN: source $HOME/.zshrc"
     else
-      echo "Sourcing ~/.zshrc"
-      # shellcheck disable=SC1090
-      source "$HOME/.zshrc" || true
+      if [ -n "${ZSH_VERSION-}" ]; then
+        echo "Sourcing ~/.zshrc"
+        # shellcheck disable=SC1090
+        source "$HOME/.zshrc" || true
+      else
+        echo "Skipping auto-source of ~/.zshrc from non-zsh shell."
+        echo "Open a new terminal or run: exec zsh"
+      fi
     fi
   fi
 fi

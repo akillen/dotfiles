@@ -4,7 +4,7 @@
 # -- CLI Tools (brew formulas) --
 brew "git"
 brew "gemini-cli"
-brew "node"
+brew "nvm"
 brew "python"
 brew "zsh-autosuggestions"
 brew "tree"

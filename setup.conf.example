@@ -9,5 +9,15 @@ GIT_EMAIL="you@example.com"
 ASSUME_YES=0
 NO_SOURCE=0
 NO_RESTART=0
+SKIP_NODE_SETUP=0
 SKIP_XCODE=0
 SKIP_SIMULATOR=0
+SKIP_BROWSER_DEFAULT=0
+
+# Node.js setup preferences (nvm)
+NODE_VERSION="node"
+NPM_VERSION="latest"
+
+# Browser default-handler retry tuning (used when duti hits lock error -54)
+BROWSER_RETRY_ATTEMPTS=4
+BROWSER_RETRY_DELAY_SECONDS=1
