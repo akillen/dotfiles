@@ -279,6 +279,26 @@ run_module_script() {
   fi
 }
 
+install_rosetta_if_needed() {
+  if [ "$(uname -m)" != "arm64" ]; then
+    echo "Intel Mac detected; Rosetta not required."
+    return 0
+  fi
+
+  if pkgutil --pkg-info com.apple.pkg.RosettaUpdateAuto >/dev/null 2>&1; then
+    echo "Rosetta 2 already installed."
+    return 0
+  fi
+
+  echo "Installing Rosetta 2 (required for x86_64 compatibility on Apple Silicon)..."
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY RUN: softwareupdate --install-rosetta --agree-to-license"
+    return 0
+  fi
+
+  softwareupdate --install-rosetta --agree-to-license
+}
+
 ensure_development_dir() {
   if [ -d "$DEVELOPMENT_DIR" ]; then
     echo "Development directory exists at $DEVELOPMENT_DIR"
@@ -296,6 +316,7 @@ ensure_development_dir() {
 echo "Starting Mac setup..."
 
 ensure_xcode_clt
+install_rosetta_if_needed
 install_homebrew_if_missing
 load_brew_env
 
