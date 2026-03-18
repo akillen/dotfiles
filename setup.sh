@@ -399,7 +399,7 @@ else
   fi
 fi
 
-echo "-> Applying macOS defaults (Finder, Dock & Sound)"
+echo "-> Applying macOS defaults (Finder, Dock, Sound & Menu Bar)"
 if [ "$NO_RESTART" -eq 1 ]; then
   run_module_script "$SCRIPT_DIR/scripts/defaults-finder.sh" --no-restart
 else
@@ -410,6 +410,12 @@ if [ "$NO_RESTART" -eq 1 ]; then
   run_module_script "$SCRIPT_DIR/scripts/defaults-sounds.sh" --no-restart
 else
   run_module_script "$SCRIPT_DIR/scripts/defaults-sounds.sh"
+fi
+
+if [ "$NO_RESTART" -eq 1 ]; then
+  run_module_script "$SCRIPT_DIR/scripts/defaults-menubar.sh" --no-restart
+else
+  run_module_script "$SCRIPT_DIR/scripts/defaults-menubar.sh"
 fi
 
 if [ "$NO_RESTART" -eq 1 ] && [ "$DOCK_RUNNING_ONLY" -eq 1 ]; then
