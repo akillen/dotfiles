@@ -36,6 +36,7 @@ cask "docker-desktop"
 cask "firefox"
 cask "bitwarden"
 cask "bruno" # API client (Postman alternative)
+cask "postman" # API client
 cask "rectangle" # Window management
 
 # -- Fonts (via homebrew/cask-fonts)
