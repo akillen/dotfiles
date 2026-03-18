@@ -22,6 +22,7 @@ NPM_GLOBAL_PACKAGES="expo eas-cli detox-cli"
 BROWSER_RETRY_ATTEMPTS=4
 BROWSER_RETRY_DELAY_SECONDS=1
 DEVELOPMENT_DIR="$HOME/development"
+GOOGLE_DRIVE_ACCOUNT_EMAIL=""
 
 usage() {
   cat <<USAGE
@@ -264,6 +265,24 @@ configure_firefox_default() {
   fi
 }
 
+is_google_drive_installed() {
+  [ -d "/Applications/Google Drive.app" ] || [ -d "$HOME/Applications/Google Drive.app" ]
+}
+
+configure_google_drive_notice() {
+  if ! is_google_drive_installed; then
+    echo "Google Drive not installed; skipping Google Drive sign-in notice."
+    return 0
+  fi
+
+  if [ -n "$GOOGLE_DRIVE_ACCOUNT_EMAIL" ]; then
+    echo "Google Drive installed. Sign in to the app using: $GOOGLE_DRIVE_ACCOUNT_EMAIL"
+    echo "Note: automated credential preconfiguration is not supported (OAuth login is app-driven)."
+  else
+    echo "Google Drive installed. Complete sign-in on first launch (OAuth login is app-driven)."
+  fi
+}
+
 run_module_script() {
   local script_path="$1"
   shift
@@ -359,6 +378,7 @@ else
 fi
 
 configure_firefox_default
+configure_google_drive_notice
 
 ensure_development_dir
 

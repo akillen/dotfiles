@@ -23,3 +23,8 @@ NPM_GLOBAL_PACKAGES="expo eas-cli detox-cli"
 # Browser default-handler retry tuning (used when duti hits lock error -54)
 BROWSER_RETRY_ATTEMPTS=4
 BROWSER_RETRY_DELAY_SECONDS=1
+
+# Optional Google Drive account hint (email only).
+# Google Drive uses OAuth login in the app, so password/token preconfiguration
+# is not supported by this setup script.
+GOOGLE_DRIVE_ACCOUNT_EMAIL=""

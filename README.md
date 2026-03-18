@@ -76,6 +76,7 @@ This project is intended to be rerun safely as your setup evolves.
 - Put machine/user-specific values in `setup.conf`.
 - Keep a shareable template in `setup.conf.example`.
 - CLI flags override config values.
+- Optional: set `GOOGLE_DRIVE_ACCOUNT_EMAIL` to show a Google Drive sign-in account hint after install. Google credentials are not preconfigured by script (OAuth in-app login).
 
 You can also use a custom config path:
 
