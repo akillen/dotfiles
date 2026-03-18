@@ -21,6 +21,9 @@ brew "duti" # set default handlers (e.g., default browser)
 brew "dockutil" # explicit Dock item add/remove by app name
 brew "mas" # Mac App Store CLI (use `mas install <id>` for store apps)
 
+# -- Mac App Store Apps (mas) --
+mas "Amphetamine", id: 937984704 # Sleep/wake scheduling utility
+
 # -- GUI Apps (casks)
 cask "visual-studio-code"
 cask "iterm2"
@@ -32,6 +35,7 @@ cask "zoom"
 cask "docker-desktop"
 cask "firefox"
 cask "bitwarden"
+cask "bruno" # API client (Postman alternative)
 cask "rectangle" # Window management
 
 # -- Fonts (via homebrew/cask-fonts)
