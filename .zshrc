@@ -33,7 +33,7 @@ if [ -n "${ZSH_VERSION-}" ] && command -v asdf > /dev/null 2>&1; then
       if ! asdf list nodejs 2>/dev/null | grep -qF "$requested_version"; then
         asdf install nodejs "$requested_version"
       fi
-      asdf set --local nodejs "$requested_version" 2>/dev/null || \
+      asdf local nodejs "$requested_version" 2>/dev/null || \
         ASDF_NODEJS_VERSION="$requested_version"
     else
       # No .nvmrc — restore the global default.
@@ -50,3 +50,5 @@ if [ -f "$HOME/.zshrc.local" ]; then
   # shellcheck disable=SC1090
   source "$HOME/.zshrc.local"
 fi
+
+. '/usr/local/opt/asdf/libexec/asdf.sh'

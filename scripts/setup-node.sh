@@ -110,7 +110,7 @@ install_asdf_language() {
   fi
 
   echo "Setting $language $version as global default..."
-  asdf set --home "$language" "$version"
+  asdf global "$language" "$version"
 }
 
 # ---------------------------------------------------------------------------
@@ -168,7 +168,7 @@ else
     echo "Node.js $NODE_VERSION is already installed."
   fi
   echo "Setting Node.js $NODE_VERSION as global default..."
-  asdf set --home nodejs "$NODE_VERSION"
+  asdf global nodejs "$NODE_VERSION"
 fi
 
 # Verify node is on PATH.
