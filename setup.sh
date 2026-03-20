@@ -387,7 +387,7 @@ echo "Running modular setup scripts..."
 echo "-> Symlinking dotfiles"
 run_module_script "$SCRIPT_DIR/scripts/symlink-dotfiles.sh"
 
-echo "-> Setting up Node.js (nvm + npm + npx)"
+echo "-> Setting up Node.js (asdf + npm + npx)"
 if [ "$SKIP_NODE_SETUP" -eq 1 ]; then
   echo "Skipping Node setup (--skip-node)."
 else
@@ -462,6 +462,20 @@ if [ "$NO_SOURCE" -eq 0 ]; then
         echo "Open a new terminal or run: exec zsh"
       fi
     fi
+  fi
+fi
+
+# Run per-machine local customizations if present.
+# Create ~/setup.local to add steps that are not appropriate for the shared
+# repo (e.g. work-specific tool installs, license keys, personal aliases).
+# This file is never committed — it is the setup-script equivalent of .zshrc.local.
+if [ -f "$HOME/setup.local" ]; then
+  echo "-> Running local customizations from ~/setup.local"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY RUN: source $HOME/setup.local"
+  else
+    # shellcheck disable=SC1090
+    source "$HOME/setup.local"
   fi
 fi
 

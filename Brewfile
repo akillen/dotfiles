@@ -7,7 +7,7 @@ tap "wix/brew"
 # -- CLI Tools (brew formulas) --
 brew "git"
 brew "gemini-cli"
-brew "nvm"
+brew "asdf"
 brew "python"
 brew "zsh-autosuggestions"
 brew "tree"

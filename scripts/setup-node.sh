@@ -37,51 +37,147 @@ while [[ ${1-} != "" ]]; do
   shift
 done
 
-echo "Setting up Node.js with nvm..."
+# ---------------------------------------------------------------------------
+# append_to_zshrc TEXT
+#   Idempotently appends TEXT to ~/.zshrc.local (preferred, for machine-local
+#   additions) or ~/.zshrc if .zshrc.local is not yet writable.
+#   Skips the write if TEXT is already present in the target file.
+#   Respects DRY_RUN.
+# ---------------------------------------------------------------------------
+append_to_zshrc() {
+  local text="$1"
+  local target
+  if [ -w "$HOME/.zshrc.local" ]; then
+    target="$HOME/.zshrc.local"
+  else
+    target="$HOME/.zshrc"
+  fi
 
-if ! command -v brew >/dev/null 2>&1; then
+  if grep -Fqs "$text" "$target" 2>/dev/null; then
+    return 0  # already present — nothing to do
+  fi
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY RUN: append to $target: $text"
+  else
+    printf "\n%s\n" "$text" >> "$target"
+    echo "Appended to $target: $text"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# add_or_update_asdf_plugin NAME [URL]
+#   Adds the plugin if it is not yet installed; updates it if it is.
+#   Keeping the plugin up to date ensures 'asdf list all' sees new releases.
+# ---------------------------------------------------------------------------
+add_or_update_asdf_plugin() {
+  local name="$1"
+  local url="${2:-}"
+
+  if ! asdf plugin list 2>/dev/null | grep -qx "$name"; then
+    echo "Adding asdf $name plugin..."
+    if [ -n "$url" ]; then
+      asdf plugin add "$name" "$url"
+    else
+      asdf plugin add "$name"
+    fi
+  else
+    echo "Updating asdf $name plugin..."
+    asdf plugin update "$name"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# install_asdf_language LANGUAGE
+#   Resolves the latest *stable* release (filters out alpha/beta/rc/nightly
+#   versions by rejecting any tag that contains a letter), installs it if not
+#   already present, and sets it as the global home default.
+# ---------------------------------------------------------------------------
+install_asdf_language() {
+  local language="$1"
+  local version
+  # grep -v "[a-zA-Z]" removes pre-release tags; tr + tail picks the last
+  # (highest) numeric-only version string.
+  version="$(asdf list all "$language" | grep -v "[a-zA-Z]" | tr -s '\n' | tail -1 | tr -d '[:space:]')"
+
+  echo "Latest stable $language version: $version"
+
+  if ! asdf list "$language" 2>/dev/null | grep -qF "$version"; then
+    echo "Installing $language $version..."
+    asdf install "$language" "$version"
+  else
+    echo "$language $version is already installed."
+  fi
+
+  echo "Setting $language $version as global default..."
+  asdf set --home "$language" "$version"
+}
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+echo "Setting up Node.js with asdf..."
+
+if ! command -v brew > /dev/null 2>&1; then
   echo "Homebrew is required before running setup-node.sh"
   exit 1
 fi
 
-NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-NVM_PREFIX="$(brew --prefix nvm 2>/dev/null || true)"
-NVM_SH="${NVM_PREFIX}/nvm.sh"
-NVM_COMPLETION="${NVM_PREFIX}/etc/bash_completion.d/nvm"
+# Resolve the asdf shell integration script from the Homebrew prefix.
+ASDF_PREFIX="$(brew --prefix asdf 2>/dev/null || true)"
+ASDF_SH="${ASDF_PREFIX}/libexec/asdf.sh"
 
 if [ "$DRY_RUN" -eq 1 ]; then
-  echo "DRY RUN: mkdir -p '$NVM_DIR'"
-  echo "DRY RUN: source '$NVM_SH'"
-  echo "DRY RUN: nvm install '$NODE_VERSION'"
-  echo "DRY RUN: nvm alias default '$NODE_VERSION'"
-  echo "DRY RUN: nvm use default"
+  echo "DRY RUN: source '$ASDF_SH'"
+  echo "DRY RUN: add_or_update_asdf_plugin nodejs"
+  echo "DRY RUN: install_asdf_language nodejs  (or pin explicit version: $NODE_VERSION)"
   echo "DRY RUN: npm install -g 'npm@$NPM_VERSION'"
   if [ -n "$GLOBAL_PACKAGES" ]; then
     echo "DRY RUN: npm install -g $GLOBAL_PACKAGES"
   fi
+  append_to_zshrc ". '${ASDF_SH}'"
   return 0 2>/dev/null || exit 0
 fi
 
-mkdir -p "$NVM_DIR"
-
-if [ ! -s "$NVM_SH" ]; then
-  echo "nvm.sh not found at $NVM_SH"
-  echo "Ensure Brewfile has 'brew \"nvm\"' and brew bundle completed successfully."
+if [ ! -f "$ASDF_SH" ]; then
+  echo "asdf.sh not found at $ASDF_SH"
+  echo "Ensure Brewfile has 'brew \"asdf\"' and brew bundle completed successfully."
   exit 1
 fi
 
 # shellcheck disable=SC1090
-. "$NVM_SH"
-if [ -s "$NVM_COMPLETION" ]; then
-  # shellcheck disable=SC1090
-  . "$NVM_COMPLETION"
+. "$ASDF_SH"
+
+# Safety net: ensure the asdf init line is present in the active shell config.
+# On machines that don't use our symlinked .zshrc this guarantees asdf is
+# bootstrapped on the next shell open. On machines that do use our .zshrc the
+# line is already there and grep will suppress the duplicate write.
+append_to_zshrc ". '${ASDF_SH}'"
+
+# Add / update the nodejs plugin.
+add_or_update_asdf_plugin "nodejs" "https://github.com/asdf-vm/asdf-nodejs.git"
+
+# Install Node — either the latest stable or an explicit pinned version.
+if [ "$NODE_VERSION" = "node" ] || [ "$NODE_VERSION" = "latest" ]; then
+  install_asdf_language "nodejs"
+else
+  echo "Installing Node.js $NODE_VERSION (explicit version)..."
+  if ! asdf list nodejs 2>/dev/null | grep -qF "$NODE_VERSION"; then
+    asdf install nodejs "$NODE_VERSION"
+  else
+    echo "Node.js $NODE_VERSION is already installed."
+  fi
+  echo "Setting Node.js $NODE_VERSION as global default..."
+  asdf set --home nodejs "$NODE_VERSION"
 fi
 
-nvm install "$NODE_VERSION"
-nvm alias default "$NODE_VERSION"
-nvm use default >/dev/null
+# Verify node is on PATH.
+if ! command -v node > /dev/null 2>&1; then
+  echo "node not found on PATH after asdf setup."
+  exit 1
+fi
 
-if command -v npm >/dev/null 2>&1; then
+if command -v npm > /dev/null 2>&1; then
   npm install -g "npm@$NPM_VERSION"
 
   if [ -n "$GLOBAL_PACKAGES" ]; then
@@ -90,13 +186,13 @@ if command -v npm >/dev/null 2>&1; then
     npm install -g "${pkgs[@]}"
   fi
 else
-  echo "npm was not found after nvm setup."
+  echo "npm was not found after asdf setup."
   exit 1
 fi
 
 echo "Node version: $(node -v)"
 echo "npm version: $(npm -v)"
-if command -v npx >/dev/null 2>&1; then
+if command -v npx > /dev/null 2>&1; then
   echo "npx version: $(npx --version)"
 else
   echo "npx command not found (npm 10+ still supports 'npm exec')."

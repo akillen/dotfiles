@@ -15,7 +15,7 @@ SKIP_XCODE=0
 SKIP_SIMULATOR=0
 SKIP_BROWSER_DEFAULT=0
 
-# Node.js setup preferences (nvm)
+# Node.js setup preferences (asdf)
 NODE_VERSION="node"
 NPM_VERSION="latest"
 NPM_GLOBAL_PACKAGES="expo eas-cli detox-cli"

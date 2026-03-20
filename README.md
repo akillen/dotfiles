@@ -89,3 +89,15 @@ You can also use a custom config path:
 - `setup.conf` is ignored by git and should stay local.
 - Script execute permissions are tracked by git.
 - Open a new shell after setup to pick up shell changes (or run `exec zsh`).
+
+## Local Customizations (Per-Machine Overrides)
+
+Two escape-hatch files let you add machine-specific steps without touching the repo:
+
+| File | Purpose |
+|---|---|
+| `~/setup.local` | Sourced at the end of `setup.sh`. Put work-specific installs, license activations, or anything not suitable for the shared repo here. |
+| `~/.zshrc.local` | Sourced at the end of `.zshrc`. Tool installers (Android Studio, Conda, etc.) that append to your shell config will write here instead of clobbering the repo-managed `.zshrc`. |
+
+Neither file is committed. Create them as needed — setup will pick them up automatically.
+
