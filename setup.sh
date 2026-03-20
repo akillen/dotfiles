@@ -15,6 +15,7 @@ SKIP_XCODE=0
 SKIP_SIMULATOR=0
 SKIP_BROWSER_DEFAULT=0
 SKIP_NODE_SETUP=0
+SKIP_WORK_APPS=0
 DOCK_RUNNING_ONLY=0
 NODE_VERSION="node"
 NPM_VERSION="latest"
@@ -37,10 +38,11 @@ Options:
   --no-source   Do not source the new shell config at the end
   --no-restart  Do not restart Finder/Dock after defaults changes
   --dock-running-only  Dock shows only currently running apps (hides pinned apps)
-  --skip-node   Skip Node.js/nvm setup
+  --skip-node   Skip Node.js/asdf setup
   --skip-xcode  Skip Xcode toolchain setup steps
   --skip-simulator  Skip iOS simulator runtime download
   --skip-browser-default  Skip Firefox default-browser configuration
+  --skip-work-apps  Skip work/office casks (Outlook, Teams, Zoom)
 USAGE
 }
 
@@ -107,6 +109,7 @@ for ((i=0; i<${#ARGS[@]}; i++)); do
     --skip-xcode) SKIP_XCODE=1 ;;
     --skip-simulator) SKIP_SIMULATOR=1 ;;
     --skip-browser-default) SKIP_BROWSER_DEFAULT=1 ;;
+    --skip-work-apps) SKIP_WORK_APPS=1 ;;
     -h|--help)
       usage
       exit 0
@@ -338,7 +341,9 @@ request_sudo_upfront() {
     return 0
   fi
 
-  echo "Some steps require administrator privileges. Please enter your password once now."
+  echo "Some steps require administrator privileges. Please enter your password now."
+  echo "Note: a few pkg-based cask installers (e.g. Zoom, Outlook) use Apple's"
+  echo "      Authorization Services and may prompt again — this is a macOS limitation."
   sudo -v
 
   # Keep the sudo credential alive for the duration of setup.
@@ -377,6 +382,17 @@ else
   brew bundle --file="$SCRIPT_DIR/Brewfile"
 fi
 
+if [ "$SKIP_WORK_APPS" -eq 1 ]; then
+  echo "Skipping work apps (SKIP_WORK_APPS=1). To install later: brew bundle --file=$SCRIPT_DIR/Brewfile.work"
+else
+  echo "Installing work apps from Brewfile.work..."
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY RUN: brew bundle --file=$SCRIPT_DIR/Brewfile.work"
+  else
+    brew bundle --file="$SCRIPT_DIR/Brewfile.work"
+  fi
+fi
+
 configure_firefox_default
 configure_google_drive_notice
 
@@ -387,7 +403,7 @@ echo "Running modular setup scripts..."
 echo "-> Symlinking dotfiles"
 run_module_script "$SCRIPT_DIR/scripts/symlink-dotfiles.sh"
 
-echo "-> Setting up Node.js (nvm + npm + npx)"
+echo "-> Setting up Node.js (asdf + npm + npx)"
 if [ "$SKIP_NODE_SETUP" -eq 1 ]; then
   echo "Skipping Node setup (--skip-node)."
 else
@@ -462,6 +478,20 @@ if [ "$NO_SOURCE" -eq 0 ]; then
         echo "Open a new terminal or run: exec zsh"
       fi
     fi
+  fi
+fi
+
+# Run per-machine local customizations if present.
+# Create ~/setup.local to add steps that are not appropriate for the shared
+# repo (e.g. work-specific tool installs, license keys, personal aliases).
+# This file is never committed — it is the setup-script equivalent of .zshrc.local.
+if [ -f "$HOME/setup.local" ]; then
+  echo "-> Running local customizations from ~/setup.local"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY RUN: source $HOME/setup.local"
+  else
+    # shellcheck disable=SC1090
+    source "$HOME/setup.local"
   fi
 fi
 

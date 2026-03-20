@@ -26,14 +26,18 @@ run() {
   if [ "$DRY_RUN" -eq 1 ]; then
     echo "DRY RUN: $*"
   else
-    eval "$@"
+    # shellcheck disable=SC2068
+    "$@"
   fi
 }
 
-if [ -f "$KEY_FILE" ]; then
-  echo "SSH key already exists at $KEY_FILE. Skipping generation."
-  exit 0
-fi
+# Check if any common SSH key file already exists
+for key in "$HOME"/.ssh/id_ed25519 "$HOME"/.ssh/id_rsa "$HOME"/.ssh/id_ecdsa; do
+  if [ -f "$key" ]; then
+    echo "An existing SSH key was found at $key. Skipping generation."
+    exit 0
+  fi
+done
 
 if [ -z "$EMAIL" ]; then
   echo "Email required to generate SSH key. Skipping."
@@ -41,6 +45,7 @@ if [ -z "$EMAIL" ]; then
 fi
 
 echo "Generating SSH key for $EMAIL"
+# Use direct command call via run wrapper without eval to preserve empty args like -N ""
 run ssh-keygen -t ed25519 -C "$EMAIL" -f "$KEY_FILE" -N ""
 
 # Start ssh-agent and add key to keychain

@@ -14,7 +14,7 @@ The main flow is:
 
 ## What This Project Sets Up
 
-- Homebrew packages and apps from `Brewfile`
+- Homebrew packages and apps from `Brewfile` (and optionally `Brewfile.work` for office apps)
 - Dotfile symlinks from this repo to your home directory
 - Git identity and SSH key setup
 - Node.js via `nvm` + npm upgrade + npx availability
@@ -66,6 +66,7 @@ This project is intended to be rerun safely as your setup evolves.
 ./setup.sh --skip-simulator
 ./setup.sh --skip-browser-default
 ./setup.sh --skip-node
+./setup.sh --skip-work-apps   # skips Brewfile.work (Outlook, Teams, Zoom)
 ./setup.sh --yes
 ```
 
@@ -89,3 +90,15 @@ You can also use a custom config path:
 - `setup.conf` is ignored by git and should stay local.
 - Script execute permissions are tracked by git.
 - Open a new shell after setup to pick up shell changes (or run `exec zsh`).
+
+## Local Customizations (Per-Machine Overrides)
+
+Two escape-hatch files let you add machine-specific steps without touching the repo:
+
+| File | Purpose |
+|---|---|
+| `~/setup.local` | Sourced at the end of `setup.sh`. Put work-specific installs, license activations, or anything not suitable for the shared repo here. |
+| `~/.zshrc.local` | Sourced at the end of `.zshrc`. Tool installers (Android Studio, Conda, etc.) that append to your shell config will write here instead of clobbering the repo-managed `.zshrc`. |
+
+Neither file is committed. Create them as needed — setup will pick them up automatically.
+

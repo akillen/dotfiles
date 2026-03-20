@@ -7,47 +7,42 @@ elif [ -x /usr/local/bin/brew ]; then
   eval "$(/usr/local/bin/brew shellenv)"
 fi
 
-# nvm initialization (Homebrew install path)
-export NVM_DIR="$HOME/.nvm"
-if command -v brew >/dev/null 2>&1; then
-  _nvm_brew_prefix="$(brew --prefix nvm 2>/dev/null || true)"
-  if [ -n "$_nvm_brew_prefix" ] && [ -s "$_nvm_brew_prefix/nvm.sh" ]; then
+# asdf initialization (Homebrew install path)
+if command -v brew > /dev/null 2>&1; then
+  _asdf_prefix="$(brew --prefix asdf 2>/dev/null || true)"
+  if [ -n "$_asdf_prefix" ] && [ -f "$_asdf_prefix/libexec/asdf.sh" ]; then
     # shellcheck disable=SC1091
-    . "$_nvm_brew_prefix/nvm.sh"
-    if [ -s "$_nvm_brew_prefix/etc/bash_completion.d/nvm" ]; then
-      # shellcheck disable=SC1091
-      . "$_nvm_brew_prefix/etc/bash_completion.d/nvm"
-    fi
+    . "$_asdf_prefix/libexec/asdf.sh"
   fi
 fi
 
 # Automatically switch Node versions based on .nvmrc when changing directories.
-# This relies on zsh-specific hooks and should only run in zsh.
-if [ -n "${ZSH_VERSION-}" ] && command -v nvm >/dev/null 2>&1; then
+# asdf-nodejs respects .nvmrc (and .node-version) natively; this hook ensures
+# the correct version is installed and activated whenever the directory changes.
+if [ -n "${ZSH_VERSION-}" ] && command -v asdf > /dev/null 2>&1; then
   autoload -U add-zsh-hook
 
-  load-nvmrc() {
-    local nvmrc_path requested_version resolved_version current_version default_version
-    nvmrc_path="$(nvm_find_nvmrc 2>/dev/null || true)"
+  _asdf_load_nvmrc() {
+    local nvmrc_path
+    nvmrc_path="${PWD}/.nvmrc"
 
-    if [ -n "$nvmrc_path" ]; then
+    if [ -f "$nvmrc_path" ]; then
+      local requested_version
       requested_version="$(cat "$nvmrc_path")"
-      resolved_version="$(nvm version "$requested_version")"
-      if [ "$resolved_version" = "N/A" ]; then
-        nvm install "$requested_version" >/dev/null
+      # Install the version if it is not yet available.
+      if ! asdf list nodejs 2>/dev/null | grep -qF "$requested_version"; then
+        asdf install nodejs "$requested_version"
       fi
-      nvm use --silent "$requested_version" >/dev/null
+      asdf local nodejs "$requested_version" 2>/dev/null || \
+        ASDF_NODEJS_VERSION="$requested_version"
     else
-      default_version="$(nvm version default)"
-      current_version="$(nvm version)"
-      if [ "$default_version" != "N/A" ] && [ "$current_version" != "$default_version" ]; then
-        nvm use --silent default >/dev/null
-      fi
+      # No .nvmrc — restore the global default.
+      unset ASDF_NODEJS_VERSION
     fi
   }
 
-  add-zsh-hook chpwd load-nvmrc
-  load-nvmrc
+  add-zsh-hook chpwd _asdf_load_nvmrc
+  _asdf_load_nvmrc
 fi
 
 # Prompt settings
@@ -67,3 +62,5 @@ if [ -f "$HOME/.zshrc.local" ]; then
   # shellcheck disable=SC1090
   source "$HOME/.zshrc.local"
 fi
+
+. '/usr/local/opt/asdf/libexec/asdf.sh'

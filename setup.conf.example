@@ -14,8 +14,9 @@ SKIP_NODE_SETUP=0
 SKIP_XCODE=0
 SKIP_SIMULATOR=0
 SKIP_BROWSER_DEFAULT=0
+SKIP_WORK_APPS=0  # Set to 1 to skip Outlook, Teams, and Zoom
 
-# Node.js setup preferences (nvm)
+# Node.js setup preferences (asdf)
 NODE_VERSION="node"
 NPM_VERSION="latest"
 NPM_GLOBAL_PACKAGES="expo eas-cli detox-cli"

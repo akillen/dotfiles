@@ -5,40 +5,38 @@
 tap "wix/brew"
 
 # -- CLI Tools (brew formulas) --
-brew "git"
-brew "gemini-cli"
-brew "nvm"
-brew "python"
-brew "zsh-autosuggestions"
-brew "tree"
-brew "jq" # Great for processing JSON
-brew "dialog" # Script dialogs/utilities
-brew "watchman" # React Native file watching
-brew "xcodes"
+brew "asdf"
 brew "cocoapods" # iOS dependency manager
-brew "wix/brew/applesimutils" # iOS simulator management (Detox)
-brew "duti" # set default handlers (e.g., default browser)
+brew "dialog" # Script dialogs/utilities
 brew "dockutil" # explicit Dock item add/remove by app name
+brew "duti" # set default handlers (e.g., default browser)
+brew "gemini-cli"
+brew "git"
+brew "jq" # Great for processing JSON
 brew "mas" # Mac App Store CLI (use `mas install <id>` for store apps)
+brew "python"
+brew "tree"
+brew "watchman" # React Native file watching
+brew "wix/brew/applesimutils" # iOS simulator management (Detox)
+brew "xcodes"
+brew "zsh-autosuggestions"
 
 # -- Mac App Store Apps (mas) --
 mas "Amphetamine", id: 937984704 # Sleep/wake scheduling utility
 
 # -- GUI Apps (casks)
-cask "visual-studio-code"
-cask "iterm2"
-cask "slack"
-cask "microsoft-outlook"
-cask "microsoft-teams"
-cask "notion"
-cask "zoom"
-cask "docker-desktop"
-cask "firefox"
 cask "bitwarden"
 cask "bruno" # API client (Postman alternative)
-cask "postman" # API client
+cask "docker-desktop"
+cask "firefox"
 cask "google-drive" # Cloud sync client
+cask "grandperspective"
+cask "iterm2"
+cask "notion"
+cask "postman" # API client
 cask "rectangle" # Window management
+cask "slack"
+cask "visual-studio-code"
 
 # -- Fonts (via homebrew/cask-fonts)
 cask "font-fira-code" # Nice dev font
