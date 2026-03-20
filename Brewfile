@@ -32,6 +32,7 @@ cask "firefox"
 cask "google-drive" # Cloud sync client
 cask "grandperspective"
 cask "iterm2"
+cask "mitmproxy" # Intercept HTTP/HTTPS traffic for debugging
 cask "notion"
 cask "postman" # API client
 cask "rectangle" # Window management

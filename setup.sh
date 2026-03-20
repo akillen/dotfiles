@@ -424,6 +424,9 @@ else
   echo "Email not provided; skipping SSH key generation."
 fi
 
+echo "-> Setting up mitmproxy certificate trust"
+run_module_script "$SCRIPT_DIR/scripts/setup-mitmproxy.sh"
+
 echo "-> Setting up Xcode toolchain"
 if [ "$SKIP_XCODE" -eq 1 ]; then
   echo "Skipping Xcode setup (--skip-xcode)."
