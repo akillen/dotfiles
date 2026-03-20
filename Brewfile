@@ -28,10 +28,6 @@ mas "Amphetamine", id: 937984704 # Sleep/wake scheduling utility
 cask "visual-studio-code"
 cask "iterm2"
 cask "slack"
-# Work / office apps — set SKIP_WORK_APPS=1 in setup.conf to omit these.
-cask "microsoft-outlook" unless ENV["SKIP_WORK_APPS"] == "1"
-cask "microsoft-teams"  unless ENV["SKIP_WORK_APPS"] == "1"
-cask "zoom"             unless ENV["SKIP_WORK_APPS"] == "1"
 cask "notion"
 cask "docker-desktop"
 cask "firefox"

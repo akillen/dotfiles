@@ -14,7 +14,7 @@ The main flow is:
 
 ## What This Project Sets Up
 
-- Homebrew packages and apps from `Brewfile`
+- Homebrew packages and apps from `Brewfile` (and optionally `Brewfile.work` for office apps)
 - Dotfile symlinks from this repo to your home directory
 - Git identity and SSH key setup
 - Node.js via `nvm` + npm upgrade + npx availability
@@ -66,7 +66,7 @@ This project is intended to be rerun safely as your setup evolves.
 ./setup.sh --skip-simulator
 ./setup.sh --skip-browser-default
 ./setup.sh --skip-node
-./setup.sh --skip-work-apps   # omits Outlook, Teams, Zoom
+./setup.sh --skip-work-apps   # skips Brewfile.work (Outlook, Teams, Zoom)
 ./setup.sh --yes
 ```
 

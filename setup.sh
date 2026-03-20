@@ -341,7 +341,9 @@ request_sudo_upfront() {
     return 0
   fi
 
-  echo "Some steps require administrator privileges. Please enter your password once now."
+  echo "Some steps require administrator privileges. Please enter your password now."
+  echo "Note: a few pkg-based cask installers (e.g. Zoom, Outlook) use Apple's"
+  echo "      Authorization Services and may prompt again — this is a macOS limitation."
   sudo -v
 
   # Keep the sudo credential alive for the duration of setup.
@@ -375,9 +377,20 @@ fi
 
 echo "Installing apps from Brewfile (from $SCRIPT_DIR)..."
 if [ "$DRY_RUN" -eq 1 ]; then
-  echo "DRY RUN: SKIP_WORK_APPS=$SKIP_WORK_APPS brew bundle --file=$SCRIPT_DIR/Brewfile"
+  echo "DRY RUN: brew bundle --file=$SCRIPT_DIR/Brewfile"
 else
-  SKIP_WORK_APPS="$SKIP_WORK_APPS" brew bundle --file="$SCRIPT_DIR/Brewfile"
+  brew bundle --file="$SCRIPT_DIR/Brewfile"
+fi
+
+if [ "$SKIP_WORK_APPS" -eq 1 ]; then
+  echo "Skipping work apps (SKIP_WORK_APPS=1). To install later: brew bundle --file=$SCRIPT_DIR/Brewfile.work"
+else
+  echo "Installing work apps from Brewfile.work..."
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY RUN: brew bundle --file=$SCRIPT_DIR/Brewfile.work"
+  else
+    brew bundle --file="$SCRIPT_DIR/Brewfile.work"
+  fi
 fi
 
 configure_firefox_default

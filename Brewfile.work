@@ -1,0 +1,7 @@
+# Work / office apps — installed optionally via setup.sh when SKIP_WORK_APPS=0.
+# Run manually at any time with:
+#   brew bundle --file=~/dotfiles/Brewfile.work
+
+cask "microsoft-outlook"
+cask "microsoft-teams"
+cask "zoom"
