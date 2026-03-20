@@ -15,6 +15,7 @@ SKIP_XCODE=0
 SKIP_SIMULATOR=0
 SKIP_BROWSER_DEFAULT=0
 SKIP_NODE_SETUP=0
+SKIP_WORK_APPS=0
 DOCK_RUNNING_ONLY=0
 NODE_VERSION="node"
 NPM_VERSION="latest"
@@ -37,10 +38,11 @@ Options:
   --no-source   Do not source the new shell config at the end
   --no-restart  Do not restart Finder/Dock after defaults changes
   --dock-running-only  Dock shows only currently running apps (hides pinned apps)
-  --skip-node   Skip Node.js/nvm setup
+  --skip-node   Skip Node.js/asdf setup
   --skip-xcode  Skip Xcode toolchain setup steps
   --skip-simulator  Skip iOS simulator runtime download
   --skip-browser-default  Skip Firefox default-browser configuration
+  --skip-work-apps  Skip work/office casks (Outlook, Teams, Zoom)
 USAGE
 }
 
@@ -107,6 +109,7 @@ for ((i=0; i<${#ARGS[@]}; i++)); do
     --skip-xcode) SKIP_XCODE=1 ;;
     --skip-simulator) SKIP_SIMULATOR=1 ;;
     --skip-browser-default) SKIP_BROWSER_DEFAULT=1 ;;
+    --skip-work-apps) SKIP_WORK_APPS=1 ;;
     -h|--help)
       usage
       exit 0
@@ -372,9 +375,9 @@ fi
 
 echo "Installing apps from Brewfile (from $SCRIPT_DIR)..."
 if [ "$DRY_RUN" -eq 1 ]; then
-  echo "DRY RUN: brew bundle --file=$SCRIPT_DIR/Brewfile"
+  echo "DRY RUN: SKIP_WORK_APPS=$SKIP_WORK_APPS brew bundle --file=$SCRIPT_DIR/Brewfile"
 else
-  brew bundle --file="$SCRIPT_DIR/Brewfile"
+  SKIP_WORK_APPS="$SKIP_WORK_APPS" brew bundle --file="$SCRIPT_DIR/Brewfile"
 fi
 
 configure_firefox_default

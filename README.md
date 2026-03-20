@@ -66,6 +66,7 @@ This project is intended to be rerun safely as your setup evolves.
 ./setup.sh --skip-simulator
 ./setup.sh --skip-browser-default
 ./setup.sh --skip-node
+./setup.sh --skip-work-apps   # omits Outlook, Teams, Zoom
 ./setup.sh --yes
 ```
 
