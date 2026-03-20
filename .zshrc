@@ -17,24 +17,33 @@ if command -v brew > /dev/null 2>&1; then
 fi
 
 # Automatically switch Node versions based on .nvmrc when changing directories.
-# asdf-nodejs respects .nvmrc (and .node-version) natively; this hook ensures
-# the correct version is installed and activated whenever the directory changes.
+# This is runtime-only (no project file mutation): it exports
+# ASDF_NODEJS_VERSION for the current shell.
 if [ -n "${ZSH_VERSION-}" ] && command -v asdf > /dev/null 2>&1; then
   autoload -U add-zsh-hook
 
   _asdf_load_nvmrc() {
     local nvmrc_path
+    local requested_version
     nvmrc_path="${PWD}/.nvmrc"
 
     if [ -f "$nvmrc_path" ]; then
-      local requested_version
-      requested_version="$(cat "$nvmrc_path")"
+      requested_version="$(tr -d '[:space:]' < "$nvmrc_path")"
+      # nvmrc often uses a leading "v" (e.g. v22.18.0); asdf expects plain semver.
+      requested_version="${requested_version#v}"
+
+      if [ -z "$requested_version" ]; then
+        unset ASDF_NODEJS_VERSION
+        return 0
+      fi
+
       # Install the version if it is not yet available.
-      if ! asdf list nodejs 2>/dev/null | grep -qF "$requested_version"; then
+      if ! asdf list nodejs 2>/dev/null | sed 's/^[*[:space:]]*//' | grep -qxF "$requested_version"; then
         asdf install nodejs "$requested_version"
       fi
-      asdf local nodejs "$requested_version" 2>/dev/null || \
-        ASDF_NODEJS_VERSION="$requested_version"
+
+      # asdf 0.18 removed "asdf local"; use runtime env var for per-directory behavior.
+      export ASDF_NODEJS_VERSION="$requested_version"
     else
       # No .nvmrc — restore the global default.
       unset ASDF_NODEJS_VERSION
