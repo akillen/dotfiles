@@ -16,6 +16,7 @@ SKIP_SIMULATOR=0
 SKIP_BROWSER_DEFAULT=0
 SKIP_NODE_SETUP=0
 SKIP_WORK_APPS=0
+PROFILE="work"
 DOCK_RUNNING_ONLY=0
 NODE_VERSION="node"
 NPM_VERSION="latest"
@@ -27,12 +28,13 @@ GOOGLE_DRIVE_ACCOUNT_EMAIL=""
 
 usage() {
   cat <<USAGE
-Usage: $PROG_NAME [--dry-run] [--yes] [--config path] [--name "Full Name"] [--email "you@example.com"] [--no-source] [--no-restart]
+Usage: $PROG_NAME [--dry-run] [--yes] [--config path] [--profile work|personal] [--name "Full Name"] [--email "you@example.com"] [--no-source] [--no-restart]
 
 Options:
   --dry-run     Show actions without making changes
   --yes         Assume yes for prompts (use with care)
   --config      Path to setup config file (default: ./setup.conf)
+  --profile     Machine profile overlay to apply: work or personal
   --name        Git user.name to configure
   --email       Git user.email and used for SSH key generation
   --no-source   Do not source the new shell config at the end
@@ -42,7 +44,7 @@ Options:
   --skip-xcode  Skip Xcode toolchain setup steps
   --skip-simulator  Skip iOS simulator runtime download
   --skip-browser-default  Skip Firefox default-browser configuration
-  --skip-work-apps  Skip work/office casks (Outlook, Teams, Zoom)
+  --skip-work-apps  Legacy override: skip work profile overlay (Brewfile.work)
 USAGE
 }
 
@@ -84,6 +86,15 @@ for ((i=0; i<${#ARGS[@]}; i++)); do
     --config)
       i=$((i + 1))
       ;;
+    --profile)
+      i=$((i + 1))
+      if [ "$i" -ge "${#ARGS[@]}" ]; then
+        echo "Missing value for --profile"
+        usage
+        exit 1
+      fi
+      PROFILE="${ARGS[$i]}"
+      ;;
     --name)
       i=$((i + 1))
       if [ "$i" -ge "${#ARGS[@]}" ]; then
@@ -121,6 +132,16 @@ for ((i=0; i<${#ARGS[@]}; i++)); do
       ;;
   esac
 done
+
+PROFILE="$(printf '%s' "$PROFILE" | tr '[:upper:]' '[:lower:]')"
+case "$PROFILE" in
+  work|personal) ;;
+  *)
+    echo "Invalid profile: $PROFILE"
+    echo "Expected one of: work, personal"
+    exit 1
+    ;;
+esac
 
 install_homebrew_if_missing() {
   if command -v brew >/dev/null 2>&1; then
@@ -286,6 +307,39 @@ configure_google_drive_notice() {
   fi
 }
 
+install_profile_overlay() {
+  local profile_brewfile="$SCRIPT_DIR/Brewfile.$PROFILE"
+
+  if [ "$PROFILE" = "work" ] && [ "$SKIP_WORK_APPS" -eq 1 ]; then
+    echo "Skipping work profile overlay (--skip-work-apps)."
+    return 0
+  fi
+
+  if [ ! -f "$profile_brewfile" ]; then
+    echo "No profile overlay found for '$PROFILE' at $profile_brewfile; skipping."
+    return 0
+  fi
+
+  echo "Installing profile overlay from $profile_brewfile..."
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "DRY RUN: brew bundle --file=$profile_brewfile"
+  else
+    brew bundle --file="$profile_brewfile"
+  fi
+}
+
+run_preflight_checks() {
+  local guard_script="$SCRIPT_DIR/scripts/check-zshrc-portability.sh"
+  local repo_zshrc="$SCRIPT_DIR/.zshrc"
+
+  if [ ! -x "$guard_script" ]; then
+    echo "Missing executable preflight guard: $guard_script"
+    exit 1
+  fi
+
+  "$guard_script" "$repo_zshrc"
+}
+
 run_module_script() {
   local script_path="$1"
   shift
@@ -355,6 +409,9 @@ request_sudo_upfront() {
 
 echo "Starting Mac setup..."
 
+echo "Running preflight checks..."
+run_preflight_checks
+
 request_sudo_upfront
 ensure_xcode_clt
 install_rosetta_if_needed
@@ -382,16 +439,7 @@ else
   brew bundle --file="$SCRIPT_DIR/Brewfile"
 fi
 
-if [ "$SKIP_WORK_APPS" -eq 1 ]; then
-  echo "Skipping work apps (SKIP_WORK_APPS=1). To install later: brew bundle --file=$SCRIPT_DIR/Brewfile.work"
-else
-  echo "Installing work apps from Brewfile.work..."
-  if [ "$DRY_RUN" -eq 1 ]; then
-    echo "DRY RUN: brew bundle --file=$SCRIPT_DIR/Brewfile.work"
-  else
-    brew bundle --file="$SCRIPT_DIR/Brewfile.work"
-  fi
-fi
+install_profile_overlay
 
 configure_firefox_default
 configure_google_drive_notice

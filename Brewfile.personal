@@ -1,0 +1,7 @@
+# Personal profile overlay.
+# Installed by setup.sh when PROFILE="personal".
+# Keep this file tracked even if currently minimal, so profile behavior stays explicit.
+
+# Example entries (uncomment as needed):
+# cask "steam"
+# cask "obs"

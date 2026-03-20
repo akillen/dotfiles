@@ -38,34 +38,6 @@ while [[ ${1-} != "" ]]; do
 done
 
 # ---------------------------------------------------------------------------
-# append_to_zshrc TEXT
-#   Idempotently appends TEXT to ~/.zshrc.local (preferred, for machine-local
-#   additions) or ~/.zshrc if .zshrc.local is not yet writable.
-#   Skips the write if TEXT is already present in the target file.
-#   Respects DRY_RUN.
-# ---------------------------------------------------------------------------
-append_to_zshrc() {
-  local text="$1"
-  local target
-  if [ -w "$HOME/.zshrc.local" ]; then
-    target="$HOME/.zshrc.local"
-  else
-    target="$HOME/.zshrc"
-  fi
-
-  if grep -Fqs "$text" "$target" 2>/dev/null; then
-    return 0  # already present — nothing to do
-  fi
-
-  if [ "$DRY_RUN" -eq 1 ]; then
-    echo "DRY RUN: append to $target: $text"
-  else
-    printf "\n%s\n" "$text" >> "$target"
-    echo "Appended to $target: $text"
-  fi
-}
-
-# ---------------------------------------------------------------------------
 # add_or_update_asdf_plugin NAME [URL]
 #   Adds the plugin if it is not yet installed; updates it if it is.
 #   Keeping the plugin up to date ensures 'asdf list all' sees new releases.
@@ -88,10 +60,35 @@ add_or_update_asdf_plugin() {
 }
 
 # ---------------------------------------------------------------------------
+# set_asdf_user_default LANGUAGE VERSION
+#   Sets the user-level default version in a way that works across asdf
+#   releases. asdf >= 0.16 uses 'asdf set -u'; older releases used
+#   'asdf global'.
+# ---------------------------------------------------------------------------
+set_asdf_user_default() {
+  local language="$1"
+  local version="$2"
+
+  if asdf set -u "$language" "$version" >/dev/null 2>&1; then
+    echo "Set user default with: asdf set -u $language $version"
+    return 0
+  fi
+
+  if asdf global "$language" "$version" >/dev/null 2>&1; then
+    echo "Set user default with: asdf global $language $version"
+    return 0
+  fi
+
+  echo "Failed to set default $language version ($version)."
+  echo "Tried both 'asdf set -u' and 'asdf global'."
+  return 1
+}
+
+# ---------------------------------------------------------------------------
 # install_asdf_language LANGUAGE
 #   Resolves the latest *stable* release (filters out alpha/beta/rc/nightly
 #   versions by rejecting any tag that contains a letter), installs it if not
-#   already present, and sets it as the global home default.
+#   already present, and sets it as the user default.
 # ---------------------------------------------------------------------------
 install_asdf_language() {
   local language="$1"
@@ -109,8 +106,8 @@ install_asdf_language() {
     echo "$language $version is already installed."
   fi
 
-  echo "Setting $language $version as global default..."
-  asdf global "$language" "$version"
+  echo "Setting $language $version as user default..."
+  set_asdf_user_default "$language" "$version"
 }
 
 # ---------------------------------------------------------------------------
@@ -135,7 +132,7 @@ if [ "$DRY_RUN" -eq 1 ]; then
   if [ -n "$GLOBAL_PACKAGES" ]; then
     echo "DRY RUN: npm install -g $GLOBAL_PACKAGES"
   fi
-  append_to_zshrc ". '${ASDF_SH}'"
+  echo "DRY RUN: shell init is managed by your dotfiles .zshrc (no rc-file mutation)"
   return 0 2>/dev/null || exit 0
 fi
 
@@ -148,11 +145,7 @@ fi
 # shellcheck disable=SC1090
 . "$ASDF_SH"
 
-# Safety net: ensure the asdf init line is present in the active shell config.
-# On machines that don't use our symlinked .zshrc this guarantees asdf is
-# bootstrapped on the next shell open. On machines that do use our .zshrc the
-# line is already there and grep will suppress the duplicate write.
-append_to_zshrc ". '${ASDF_SH}'"
+echo "Shell init is managed by dotfiles .zshrc; setup-node.sh will not edit rc files."
 
 # Add / update the nodejs plugin.
 add_or_update_asdf_plugin "nodejs" "https://github.com/asdf-vm/asdf-nodejs.git"
@@ -167,8 +160,8 @@ else
   else
     echo "Node.js $NODE_VERSION is already installed."
   fi
-  echo "Setting Node.js $NODE_VERSION as global default..."
-  asdf global nodejs "$NODE_VERSION"
+  echo "Setting Node.js $NODE_VERSION as user default..."
+  set_asdf_user_default nodejs "$NODE_VERSION"
 fi
 
 # Verify node is on PATH.

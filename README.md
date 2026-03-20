@@ -14,12 +14,27 @@ The main flow is:
 
 ## What This Project Sets Up
 
-- Homebrew packages and apps from `Brewfile` (and optionally `Brewfile.work` for office apps)
+- Homebrew base packages/apps from `Brewfile`
+- Profile overlay packages/apps from `Brewfile.work` or `Brewfile.personal`
 - Dotfile symlinks from this repo to your home directory
 - Git identity and SSH key setup
-- Node.js via `nvm` + npm upgrade + npx availability
+- Node.js via `asdf` + npm upgrade + npx availability
 - macOS defaults (Finder/Dock)
 - Optional Xcode + iOS simulator setup
+
+## Profiles
+
+This repo supports two machine profiles:
+
+- `work` (default): installs `Brewfile.work` overlay
+- `personal`: installs `Brewfile.personal` overlay
+
+Profile can be selected in `setup.conf` (`PROFILE="work"|"personal"`) or via CLI:
+
+```bash
+./setup.sh --profile work
+./setup.sh --profile personal
+```
 
 ## New Machine Setup
 
@@ -66,7 +81,9 @@ This project is intended to be rerun safely as your setup evolves.
 ./setup.sh --skip-simulator
 ./setup.sh --skip-browser-default
 ./setup.sh --skip-node
-./setup.sh --skip-work-apps   # skips Brewfile.work (Outlook, Teams, Zoom)
+./setup.sh --profile work
+./setup.sh --profile personal
+./setup.sh --skip-work-apps   # legacy work-profile override
 ./setup.sh --yes
 ```
 
@@ -77,6 +94,7 @@ This project is intended to be rerun safely as your setup evolves.
 - Put machine/user-specific values in `setup.conf`.
 - Keep a shareable template in `setup.conf.example`.
 - CLI flags override config values.
+- Use `PROFILE="work"` or `PROFILE="personal"` to control overlay installs.
 - Optional: set `GOOGLE_DRIVE_ACCOUNT_EMAIL` to show a Google Drive sign-in account hint after install. Google credentials are not preconfigured by script (OAuth in-app login).
 
 You can also use a custom config path:
@@ -89,16 +107,16 @@ You can also use a custom config path:
 
 - `setup.conf` is ignored by git and should stay local.
 - Script execute permissions are tracked by git.
+- `setup.sh` runs a preflight guard that fails if repo `.zshrc` contains machine-specific asdf source paths.
 - Open a new shell after setup to pick up shell changes (or run `exec zsh`).
 
 ## Local Customizations (Per-Machine Overrides)
 
 Two escape-hatch files let you add machine-specific steps without touching the repo:
 
-| File | Purpose |
-|---|---|
-| `~/setup.local` | Sourced at the end of `setup.sh`. Put work-specific installs, license activations, or anything not suitable for the shared repo here. |
+| File             | Purpose                                                                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `~/setup.local`  | Sourced at the end of `setup.sh`. Put work-specific installs, license activations, or anything not suitable for the shared repo here.                                           |
 | `~/.zshrc.local` | Sourced at the end of `.zshrc`. Tool installers (Android Studio, Conda, etc.) that append to your shell config will write here instead of clobbering the repo-managed `.zshrc`. |
 
 Neither file is committed. Create them as needed — setup will pick them up automatically.
-

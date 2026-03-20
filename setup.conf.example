@@ -10,11 +10,12 @@ ASSUME_YES=0
 NO_SOURCE=0
 NO_RESTART=0
 DOCK_RUNNING_ONLY=0
+PROFILE="work"  # work or personal
 SKIP_NODE_SETUP=0
 SKIP_XCODE=0
 SKIP_SIMULATOR=0
 SKIP_BROWSER_DEFAULT=0
-SKIP_WORK_APPS=0  # Set to 1 to skip Outlook, Teams, and Zoom
+SKIP_WORK_APPS=0  # Legacy override for work profile only; keep 0 unless needed
 
 # Node.js setup preferences (asdf)
 NODE_VERSION="node"

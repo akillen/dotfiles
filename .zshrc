@@ -62,5 +62,3 @@ if [ -f "$HOME/.zshrc.local" ]; then
   # shellcheck disable=SC1090
   source "$HOME/.zshrc.local"
 fi
-
-. '/usr/local/opt/asdf/libexec/asdf.sh'
