@@ -15,6 +15,7 @@ brew "git"
 brew "jq" # Great for processing JSON
 brew "mas" # Mac App Store CLI (use `mas install <id>` for store apps)
 brew "python"
+brew "ripgrep" # Fast recursive search (like grep)././
 brew "tree"
 brew "watchman" # React Native file watching
 brew "wix/brew/applesimutils" # iOS simulator management (Detox)
