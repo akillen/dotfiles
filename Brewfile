@@ -11,6 +11,7 @@ brew "dialog" # Script dialogs/utilities
 brew "dockutil" # explicit Dock item add/remove by app name
 brew "duti" # set default handlers (e.g., default browser)
 brew "gemini-cli"
+brew "gh" # GitHub CLI
 brew "git"
 brew "jq" # Great for processing JSON
 brew "mas" # Mac App Store CLI (use `mas install <id>` for store apps)
@@ -37,6 +38,7 @@ cask "mitmproxy" # Intercept HTTP/HTTPS traffic for debugging
 cask "notion"
 cask "postman" # API client
 cask "rectangle" # Window management
+cask "signal" # Encrypted messaging
 cask "slack"
 cask "visual-studio-code"
 
