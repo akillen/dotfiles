@@ -475,7 +475,11 @@ fi
 echo "-> Setting up mitmproxy certificate trust"
 run_module_script "$SCRIPT_DIR/scripts/setup-mitmproxy.sh"
 
+echo "-> Configuring iTerm2 settings"
+run_module_script "$SCRIPT_DIR/scripts/setup-iterm2.sh"
+
 echo "-> Setting up Xcode toolchain"
+
 if [ "$SKIP_XCODE" -eq 1 ]; then
   echo "Skipping Xcode setup (--skip-xcode)."
 else
