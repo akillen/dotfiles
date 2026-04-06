@@ -6,3 +6,4 @@
 cask "microsoft-outlook"
 cask "microsoft-teams"
 cask "zoom"
+cask "licecap"

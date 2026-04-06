@@ -27,6 +27,7 @@ brew "zsh-autosuggestions"
 mas "Amphetamine", id: 937984704 # Sleep/wake scheduling utility
 
 # -- GUI Apps (casks)
+cask "antigravity"
 cask "bitwarden"
 cask "bruno" # API client (Postman alternative)
 cask "docker-desktop"
